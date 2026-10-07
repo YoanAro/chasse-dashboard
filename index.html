@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chasse Marketplace — tableau de bord</title>
+<style>
+  :root{
+    --bg:#0f1115; --card:#181b22; --card2:#1f232c; --line:#2a2f3a;
+    --txt:#e6e9ef; --muted:#9aa3b2; --accent:#4ade80; --accent2:#60a5fa;
+    --gold:#fbbf24; --danger:#f87171;
+  }
+  @media (prefers-color-scheme: light){
+    :root:not([data-theme="dark"]){
+      --bg:#f6f7f9; --card:#ffffff; --card2:#f0f2f5; --line:#e2e5ea;
+      --txt:#1a1d23; --muted:#5b6472; --accent:#16a34a; --accent2:#2563eb;
+      --gold:#b45309; --danger:#dc2626;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+  .wrap{max-width:1100px;margin:0 auto;padding:16px;}
+  header{display:flex;flex-wrap:wrap;align-items:center;gap:12px;justify-content:space-between;margin-bottom:8px}
+  h1{font-size:19px;margin:0;font-weight:650}
+  h1 small{color:var(--muted);font-weight:400;font-size:13px}
+  button,label.btn{background:var(--accent2);color:#fff;border:0;border-radius:8px;
+    padding:9px 14px;font-size:14px;cursor:pointer;font-weight:550}
+  button.ghost{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
+  input[type=file]{display:none}
+  .maj{color:var(--muted);font-size:13px}
+  .cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin:14px 0}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+  .stat .k{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.04em}
+  .stat .v{font-size:22px;font-weight:650;margin-top:3px}
+  .stat .v small{font-size:13px;color:var(--muted);font-weight:400}
+  .tabs{display:flex;gap:6px;margin:18px 0 12px;flex-wrap:wrap}
+  .tab{padding:8px 14px;border-radius:8px;background:var(--card2);border:1px solid var(--line);
+    cursor:pointer;font-weight:550;font-size:14px}
+  .tab.active{background:var(--accent2);color:#fff;border-color:var(--accent2)}
+  section{display:none} section.active{display:block}
+  .pep,.lot{background:var(--card);border:1px solid var(--line);border-radius:10px;
+    padding:13px 15px;margin-bottom:10px}
+  .pep .top,.lot .top{display:flex;flex-wrap:wrap;align-items:baseline;gap:8px;justify-content:space-between}
+  .name{font-weight:650;font-size:16px}
+  .marge{color:var(--accent);font-weight:700;font-size:16px;white-space:nowrap}
+  .sub{color:var(--muted);font-size:13px;margin-top:3px}
+  .sub a{color:var(--accent2);text-decoration:none}
+  .detail{margin-top:10px;border-top:1px solid var(--line);padding-top:9px;display:none}
+  .detail.open{display:block}
+  .toggle{color:var(--accent2);cursor:pointer;font-size:13px;font-weight:550;margin-top:8px;display:inline-block}
+  .row{display:flex;justify-content:space-between;gap:10px;font-size:13px;padding:2px 0;color:var(--muted)}
+  .row a{color:var(--accent2);text-decoration:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ventes{margin-top:8px;padding-top:6px;border-top:1px dashed var(--line)}
+  .ventes .lbl{color:var(--gold);font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.03em}
+  table{width:100%;border-collapse:collapse;font-size:14px}
+  th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.03em;cursor:pointer;user-select:none}
+  td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
+  tr.insuff td{color:var(--muted)}
+  .search{width:100%;max-width:280px;padding:8px 11px;border-radius:8px;border:1px solid var(--line);
+    background:var(--card);color:var(--txt);margin-bottom:10px;font-size:14px}
+  .empty{color:var(--muted);text-align:center;padding:40px 10px}
+  .drop{border:2px dashed var(--line);border-radius:12px;padding:46px 16px;text-align:center;color:var(--muted);margin:24px 0}
+  .pill{display:inline-block;background:var(--card2);border:1px solid var(--line);border-radius:999px;
+    padding:1px 8px;font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>📊 Chasse Marketplace <small id="ville"></small></h1>
+    <div style="display:flex;gap:8px;align-items:center">
+      <span class="maj" id="maj"></span>
+      <label class="btn" for="file">Charger arbitrage.db</label>
+      <input type="file" id="file" accept=".db,.sqlite,.sqlite3">
+    </div>
+  </header>
+
+  <div id="loader" class="drop">
+    Glisse ton fichier <b>arbitrage.db</b> ici, ou clique « Charger arbitrage.db ».<br>
+    <span style="font-size:13px">Astuce : fais d'abord <code>git pull</code> pour récupérer la base à jour du bot.</span>
+  </div>
+
+  <div id="app" style="display:none">
+    <div class="cards" id="stats"></div>
+    <div class="tabs">
+      <div class="tab active" data-s="pep">Pépites (<span id="npep">0</span>)</div>
+      <div class="tab" data-s="lot">Lots sous-évalués (<span id="nlot">0</span>)</div>
+      <div class="tab" data-s="cat">Catalogue (<span id="ncat">0</span>)</div>
+    </div>
+
+    <section id="pep" class="active"></section>
+    <section id="lot"></section>
+    <section id="cat">
+      <input class="search" id="catSearch" placeholder="Filtrer un jeu…">
+      <div id="catTable"></div>
+    </section>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/sql-wasm.js"></script>
+<script>
+const $ = s => document.querySelector(s);
+const money = v => (v==null?"—":Math.round(v)+"$");
+const esc = s => (s==null?"":String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+const age = a => a==null ? "" : `il y a ~${a}j`;
+let DATA = null;
+
+// ---- chargement du fichier ----
+let SQL=null;
+async function openFile(file){
+  if(!SQL) SQL = await initSqlJs({locateFile:f=>`https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.10.3/${f}`});
+  const buf = new Uint8Array(await file.arrayBuffer());
+  let db;
+  try{ db = new SQL.Database(buf); }
+  catch(e){ alert("Fichier illisible : "+e.message); return; }
+  let res;
+  try{ res = db.exec("SELECT data_json FROM snapshot WHERE id=1"); }
+  catch(e){ res = []; }
+  if(!res.length || !res[0].values.length){
+    $("#loader").innerHTML = "Base chargée, mais aucun instantané trouvé.<br><span style='font-size:13px'>Lance un passage de <code>chasse.py</code> (ou attends le prochain scrape du bot) pour générer les données du tableau de bord.</span>";
+    return;
+  }
+  DATA = JSON.parse(res[0].values[0][0]);
+  render();
+}
+$("#file").addEventListener("change", e=>{ if(e.target.files[0]) openFile(e.target.files[0]); });
+["dragover","drop"].forEach(ev=>document.addEventListener(ev,e=>e.preventDefault()));
+document.addEventListener("drop", e=>{ if(e.dataTransfer.files[0]) openFile(e.dataTransfer.files[0]); });
+
+// ---- rendu ----
+function render(){
+  $("#loader").style.display="none";
+  $("#app").style.display="block";
+  $("#ville").textContent = DATA.ville ? "· "+DATA.ville : "";
+  const d = DATA.maj ? new Date(DATA.maj) : null;
+  $("#maj").textContent = d ? "mis à jour le "+d.toLocaleString() : "";
+
+  const b = DATA.budget||{};
+  $("#stats").innerHTML = [
+    stat("Budget du mois", `${(b.depense??0).toFixed(2)}<small> / ${(DATA.budget&&DATA.budget.restant!=null)?(( b.depense+b.restant)).toFixed(0):"5"}$</small>`),
+    stat("Prochain scrape", b.intervalle_jours!=null?`~${Math.round(b.intervalle_jours)}<small> j</small>`:"—"),
+    stat("Jours restants", (b.jours_restants??"—")+""),
+    stat("Annonces actives", (DATA.n_annonces_actives??"—")+""),
+    stat("Seuils", `<span class="pill">pépite ${DATA.seuil_marge}$</span> <span class="pill">lot ${DATA.seuil_lot}$</span>`),
+    stat("Fenêtre ventes", (DATA.fenetre_vente_jours??"—")+`<small> j</small>`),
+  ].join("");
+
+  renderPepites();
+  renderLots();
+  renderCatalogue();
+}
+function stat(k,v){ return `<div class="stat"><div class="k">${k}</div><div class="v">${v}</div></div>`; }
+
+function renderPepites(){
+  const peps = (DATA.pepites||[]).slice().sort((a,b)=>b.marge-a.marge);
+  $("#npep").textContent = peps.length;
+  if(!peps.length){ $("#pep").innerHTML = `<div class="empty">Aucune pépite pour l'instant.</div>`; return; }
+  $("#pep").innerHTML = peps.map((p,i)=>{
+    const cl = c=>`<div class="row"><span>${money(c.prix)} ${c.age!=null?'~'+c.age+'j':''}</span>${c.url?`<a href="${esc(c.url)}" target="_blank">↗</a>`:""}</div>`;
+    const comps = (p.comparables||[]).map(cl).join("");
+    const ventes = (p.ventes&&p.ventes.length)?`<div class="ventes"><div class="lbl">Déjà vendus (${p.ventes.length}) — ventes réelles</div>${p.ventes.map(cl).join("")}</div>`:"";
+    const lien = p.url?` · <a href="${esc(p.url)}" target="_blank">voir l'annonce ↗</a>`:"";
+    return `<div class="pep">
+      <div class="top"><span class="name">${esc(p.nom)}</span><span class="marge">+${Math.round(p.marge)}$</span></div>
+      <div class="sub">achète <b>${money(p.prix)}</b> → revends ~${money(p.ref)} · ${esc(p.label||"")} · ${age(p.age)}${lien}</div>
+      <span class="toggle" onclick="this.nextElementSibling.classList.toggle('open')">Comparables &amp; ventes (${(p.comparables||[]).length})</span>
+      <div class="detail">${comps}${ventes}</div>
+    </div>`;
+  }).join("");
+}
+
+function renderLots(){
+  const lots = (DATA.lots||[]).slice().sort((a,b)=>b.marge-a.marge);
+  $("#nlot").textContent = lots.length;
+  if(!lots.length){ $("#lot").innerHTML = `<div class="empty">Aucun lot sous-évalué pour l'instant.</div>`; return; }
+  $("#lot").innerHTML = lots.map(l=>{
+    const partiel = l.n_val===l.n_total?"":` <span class="pill">${l.n_val}/${l.n_total} estimés</span>`;
+    const comps = (l.composants||[]).map(c=>`<div class="row"><span>${esc(c.nom)}</span><span>${c.ref!=null?money(c.ref):'valeur inconnue'}</span></div>`).join("");
+    const lien = l.url?` · <a href="${esc(l.url)}" target="_blank">voir l'annonce ↗</a>`:"";
+    return `<div class="lot">
+      <div class="top"><span class="name">📦 Lot</span><span class="marge">+${Math.round(l.marge)}$</span></div>
+      <div class="sub">achète <b>${money(l.prix)}</b> → valeur estimée ~${money(l.valeur)}${partiel} · ${age(l.age)}${lien}</div>
+      <span class="toggle" onclick="this.nextElementSibling.classList.toggle('open')">Contenu du lot (${(l.composants||[]).length})</span>
+      <div class="detail">${comps}</div>
+    </div>`;
+  }).join("");
+}
+
+let catSort = {k:"n_comparables", dir:-1};
+function renderCatalogue(){
+  const q = ($("#catSearch").value||"").toLowerCase();
+  let g = (DATA.groupes||[]).filter(x=>x.nom.toLowerCase().includes(q));
+  $("#ncat").textContent = (DATA.groupes||[]).length;
+  g.sort((a,b)=>{
+    const va=a[catSort.k], vb=b[catSort.k];
+    if(va==null && vb==null) return 0; if(va==null) return 1; if(vb==null) return -1;
+    return (va<vb?-1:va>vb?1:0)*catSort.dir;
+  });
+  const h = (k,lbl,num)=>`<th class="${num?'num':''}" onclick="setSort('${k}')">${lbl}${catSort.k===k?(catSort.dir<0?' ▼':' ▲'):''}</th>`;
+  const rows = g.map(x=>{
+    const insuff = x.mediane==null;
+    return `<tr class="${insuff?'insuff':''}">
+      <td>${esc(x.nom)}</td>
+      <td class="num">${x.mediane!=null?money(x.mediane):'insuffisant'}</td>
+      <td class="num">${x.plus_bas!=null?money(x.plus_bas):'—'}</td>
+      <td class="num">${x.n_comparables}</td>
+      <td class="num">${x.n_ventes||0}</td>
+      <td class="num">${x.age_moy!=null?'~'+x.age_moy+'j':'—'}</td>
+      <td class="num">${x.n_pepites||0}</td>
+    </tr>`;
+  }).join("");
+  $("#catTable").innerHTML = `<table><thead><tr>
+    ${h("nom","Jeu")}${h("mediane","Médiane",1)}${h("plus_bas","Plus bas",1)}
+    ${h("n_comparables","Comp.",1)}${h("n_ventes","Ventes",1)}${h("age_moy","Âge moy",1)}${h("n_pepites","Pépites",1)}
+    </tr></thead><tbody>${rows||`<tr><td colspan="7" class="empty">Rien à afficher.</td></tr>`}</tbody></table>`;
+}
+function setSort(k){ if(catSort.k===k) catSort.dir*=-1; else {catSort.k=k; catSort.dir=-1;} renderCatalogue(); }
+$("#catSearch").addEventListener("input", renderCatalogue);
+
+// onglets
+document.querySelectorAll(".tab").forEach(t=>t.addEventListener("click",()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  document.querySelectorAll("section").forEach(x=>x.classList.remove("active"));
+  t.classList.add("active"); $("#"+t.dataset.s).classList.add("active");
+}));
+
+// Chargement AUTO : si un snapshot.json est servi a cote (version hebergee),
+// on l'affiche directement. Sinon on laisse le choix manuel du fichier (local).
+(async function init(){
+  try{
+    const r = await fetch("snapshot.json", {cache:"no-store"});
+    if(r.ok){
+      const d = await r.json();
+      if(d && d.maj){ DATA = d; render(); return; }
+    }
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
