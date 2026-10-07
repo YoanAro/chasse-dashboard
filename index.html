@@ -24,8 +24,9 @@
   header{display:flex;flex-wrap:wrap;align-items:center;gap:12px;justify-content:space-between;margin-bottom:8px}
   h1{font-size:19px;margin:0;font-weight:650}
   h1 small{color:var(--muted);font-weight:400;font-size:13px}
-  button,label.btn{background:var(--accent2);color:#fff;border:0;border-radius:8px;
-    padding:9px 14px;font-size:14px;cursor:pointer;font-weight:550}
+  button,label.btn,a.btn{background:var(--accent2);color:#fff;border:0;border-radius:8px;
+    padding:9px 14px;font-size:14px;cursor:pointer;font-weight:550;text-decoration:none;display:inline-block}
+  a.btn.alt{background:var(--gold);color:#1a1d23}
   button.ghost{background:var(--card2);color:var(--txt);border:1px solid var(--line)}
   input[type=file]{display:none}
   .maj{color:var(--muted);font-size:13px}
@@ -70,8 +71,9 @@
 <div class="wrap">
   <header>
     <h1>📊 Chasse Marketplace <small id="ville"></small></h1>
-    <div style="display:flex;gap:8px;align-items:center">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <span class="maj" id="maj"></span>
+      <a class="btn alt" href="https://github.com/YoanAro/faille-jeux/actions/workflows/chasse.yml" target="_blank" rel="noopener">⚡ Forcer un scrape</a>
       <label class="btn" for="file">Charger arbitrage.db</label>
       <input type="file" id="file" accept=".db,.sqlite,.sqlite3">
     </div>
@@ -162,9 +164,10 @@ function renderPepites(){
     const comps = (p.comparables||[]).map(cl).join("");
     const ventes = (p.ventes&&p.ventes.length)?`<div class="ventes"><div class="lbl">Déjà vendus (${p.ventes.length}) — ventes réelles</div>${p.ventes.map(cl).join("")}</div>`:"";
     const lien = p.url?` · <a href="${esc(p.url)}" target="_blank">voir l'annonce ↗</a>`:"";
+    const rep = p.repost?` · <span style="color:var(--gold)">♻️ republiée</span>`:"";
     return `<div class="pep">
       <div class="top"><span class="name">${esc(p.nom)}</span><span class="marge">+${Math.round(p.marge)}$</span></div>
-      <div class="sub">achète <b>${money(p.prix)}</b> → revends ~${money(p.ref)} · ${esc(p.label||"")} · ${age(p.age)}${lien}</div>
+      <div class="sub">achète <b>${money(p.prix)}</b> → revends ~${money(p.ref)} · ${esc(p.label||"")} · ${age(p.age)}${rep}${lien}</div>
       <span class="toggle" onclick="this.nextElementSibling.classList.toggle('open')">Comparables &amp; ventes (${(p.comparables||[]).length})</span>
       <div class="detail">${comps}${ventes}</div>
     </div>`;
