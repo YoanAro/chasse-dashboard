@@ -65,6 +65,10 @@
   .drop{border:2px dashed var(--line);border-radius:12px;padding:46px 16px;text-align:center;color:var(--muted);margin:24px 0}
   .pill{display:inline-block;background:var(--card2);border:1px solid var(--line);border-radius:999px;
     padding:1px 8px;font-size:12px;color:var(--muted)}
+  .conf{font-weight:600;padding:1px 7px;border-radius:999px;font-size:12px}
+  .conf-fiable{background:rgba(74,222,128,.18);color:var(--accent)}
+  .conf-correct{background:rgba(251,191,36,.20);color:var(--gold)}
+  .conf-faible{background:rgba(248,113,113,.16);color:var(--danger)}
 </style>
 </head>
 <body>
@@ -108,6 +112,12 @@ const $ = s => document.querySelector(s);
 const money = v => (v==null?"—":Math.round(v)+"$");
 const esc = s => (s==null?"":String(s)).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
 const age = a => a==null ? "" : `il y a ~${a}j`;
+const confPill = c => c?` · <span class="conf conf-${c}">${c}</span>`:"";
+const budgetTotal = b => {
+  if(b.budget!=null) return Math.round(b.budget);
+  if(b.depense!=null && b.restant!=null) return Math.round(b.depense+b.restant);
+  return "?";
+};
 let DATA = null;
 
 // ---- chargement du fichier ----
@@ -142,7 +152,7 @@ function render(){
 
   const b = DATA.budget||{};
   $("#stats").innerHTML = [
-    stat("Budget du mois", `${(b.depense??0).toFixed(2)}<small> / ${(DATA.budget&&DATA.budget.restant!=null)?(( b.depense+b.restant)).toFixed(0):"5"}$</small>`),
+    stat("Budget du mois", `${(b.depense??0).toFixed(2)}<small> / ${budgetTotal(b)}$</small>`),
     stat("Prochain scrape", b.intervalle_jours!=null?`~${Math.round(b.intervalle_jours)}<small> j</small>`:"—"),
     stat("Jours restants", (b.jours_restants??"—")+""),
     stat("Annonces actives", (DATA.n_annonces_actives??"—")+""),
@@ -168,7 +178,7 @@ function renderPepites(){
     const rep = p.repost?` · <span style="color:var(--gold)">♻️ republiée</span>`:"";
     return `<div class="pep">
       <div class="top"><span class="name">${esc(p.nom)}</span><span class="marge">+${Math.round(p.marge)}$</span></div>
-      <div class="sub">achète <b>${money(p.prix)}</b> → revends ~${money(p.ref)} · ${esc(p.label||"")} · ${age(p.age)}${rep}${lien}</div>
+      <div class="sub">achète <b>${money(p.prix)}</b> → revends ~${money(p.ref)} · ${esc(p.label||"")} · ${age(p.age)}${confPill(p.confiance)}${rep}${lien}</div>
       <span class="toggle" onclick="this.nextElementSibling.classList.toggle('open')">Comparables &amp; ventes (${(p.comparables||[]).length})</span>
       <div class="detail">${comps}${ventes}</div>
     </div>`;
@@ -212,13 +222,14 @@ function renderCatalogue(){
       <td class="num">${x.n_comparables}</td>
       <td class="num">${x.n_ventes||0}</td>
       <td class="num">${x.age_moy!=null?'~'+x.age_moy+'j':'—'}</td>
+      <td>${x.confiance?`<span class="conf conf-${x.confiance}">${x.confiance}</span>`:'—'}</td>
       <td class="num">${x.n_pepites||0}</td>
     </tr>`;
   }).join("");
   $("#catTable").innerHTML = `<table><thead><tr>
     ${h("nom","Jeu")}${h("mediane","Médiane",1)}${h("plus_bas","Plus bas",1)}
-    ${h("n_comparables","Comp.",1)}${h("n_ventes","Ventes",1)}${h("age_moy","Âge moy",1)}${h("n_pepites","Pépites",1)}
-    </tr></thead><tbody>${rows||`<tr><td colspan="7" class="empty">Rien à afficher.</td></tr>`}</tbody></table>`;
+    ${h("n_comparables","Comp.",1)}${h("n_ventes","Ventes",1)}${h("age_moy","Âge moy",1)}${h("confiance","Confiance")}${h("n_pepites","Pépites",1)}
+    </tr></thead><tbody>${rows||`<tr><td colspan="8" class="empty">Rien à afficher.</td></tr>`}</tbody></table>`;
 }
 function setSort(k){ if(catSort.k===k) catSort.dir*=-1; else {catSort.k=k; catSort.dir=-1;} renderCatalogue(); }
 $("#catSearch").addEventListener("input", renderCatalogue);
