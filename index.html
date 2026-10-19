@@ -156,6 +156,7 @@ function render(){
     stat("Prochain scrape", b.intervalle_jours!=null?`~${Math.round(b.intervalle_jours)}<small> j</small>`:"—"),
     stat("Jours restants", (b.jours_restants??"—")+""),
     stat("Annonces actives", (DATA.n_annonces_actives??"—")+""),
+    stat("Catégories", (DATA.categories_actives&&DATA.categories_actives.length)?DATA.categories_actives.map(c=>`<span class="pill">${esc(c)}</span>`).join(" "):"—"),
     stat("Seuils", `<span class="pill">pépite ${DATA.seuil_marge}$</span> <span class="pill">lot ${DATA.seuil_lot}$</span>`),
     stat("Fenêtre ventes", (DATA.fenetre_vente_jours??"—")+`<small> j</small>`),
   ].join("");
